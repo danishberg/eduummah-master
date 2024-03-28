@@ -12,9 +12,11 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Adjust BASE_DIR to be the root of your Django project, not the entire application structure.
+# This assumes your settings.py is within `backend/eduummah/eduummah`.
 BASE_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_BUILD_DIR = BASE_DIR / 'frontend' / 'build'
+
+print("Base directory:", BASE_DIR)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-nhz)7el26^)h@ix#9&e^@g((=r=-8tx+61bt=jmk$yb1)is%vl'
@@ -23,7 +25,6 @@ SECRET_KEY = 'django-insecure-nhz)7el26^)h@ix#9&e^@g((=r=-8tx+61bt=jmk$yb1)is%vl
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -49,6 +50,15 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'eduummah.urls'
 
+# Define the full path to the frontend build directory.
+# Adjust if your project layout is different.
+
+FRONTEND_BUILD_DIR = BASE_DIR.parent.parent / 'frontend' / 'build'
+
+
+print("Frontend build directory:", FRONTEND_BUILD_DIR)
+print("Static files directory:", FRONTEND_BUILD_DIR / 'static')
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -67,33 +77,31 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'eduummah.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# Database configuration.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
+        # Ensure the path to db.sqlite3 is relative to your Django project.
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
-# Password validation
-# https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
+# Password validation.
 AUTH_PASSWORD_VALIDATORS = [
     # ... your existing password validators ...
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
+# Internationalization.
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
+# Static files (CSS, JavaScript, Images).
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [FRONTEND_BUILD_DIR / 'static']  # Serve the static files from the React app build folder
+STATICFILES_DIRS = [
+    FRONTEND_BUILD_DIR / 'static',
+]
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
+# Default primary key field type.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
