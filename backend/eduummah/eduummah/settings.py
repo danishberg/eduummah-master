@@ -108,7 +108,7 @@ STATICFILES_DIRS = [
 ]
 
 
-# Default primary key field type.
+# Default primary key field type. Test text
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Change from allowing all origins to specifying which origins are allowed.
