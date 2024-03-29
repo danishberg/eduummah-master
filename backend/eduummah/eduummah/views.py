@@ -79,6 +79,23 @@ def login_api(request):
         else:
             return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
+from django.contrib.auth import logout
+from django.http import JsonResponse
+
+def logout_view(request):
+    # Clear the user's authentication details
+    # For example, if you're using tokens:
+    auth_token = request.headers.get('Authorization')
+    # Delete the token from the database or perform any necessary cleanup
+
+    # Call the Django built-in logout function
+    logout(request)
+
+    # Return a JSON response indicating success
+    return JsonResponse({'message': 'Logged off successfully'})
+
+
 # Django Rest Framework viewsets
 
 class CourseViewSet(viewsets.ModelViewSet):
