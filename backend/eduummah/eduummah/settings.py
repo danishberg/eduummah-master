@@ -36,6 +36,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'eduummah',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -46,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'eduummah.urls'
@@ -105,3 +109,19 @@ STATICFILES_DIRS = [
 
 # Default primary key field type.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Change from allowing all origins to specifying which origins are allowed.
+CORS_ALLOW_ALL_ORIGINS = False  # Set this to False to disable the wildcard '*'
+
+# Ensure this setting is set to True to allow cookies (credentials) to be included in cross-origin requests
+CORS_ALLOW_CREDENTIALS = True
+
+
+# Then specify the exact origins you want to allow
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+
+# Other CORS settings...
