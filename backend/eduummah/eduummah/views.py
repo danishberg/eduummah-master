@@ -20,20 +20,26 @@ from .serializers import CourseSerializer, LessonSerializer, UserProgressSeriali
 def register_api(request):
     print("Register API called")
     if request.method == 'POST':
-        print("Received data:", request.data)  # Log received data
+        print("Received data:", request.data)
         form = CustomUserCreationForm(request.data)
         if form.is_valid():
-            print("Form is valid")  # Confirm form validation.
+            print("Form is valid")
             user = form.save(commit=False)
             user.is_active = False
             user.verification_token = uuid.uuid4()
+
+            # Here, explicitly set the user's email field.
+            # Assuming the form's 'username' field is used for the email address.
+            user.email = request.data.get('username')
+
             user.save()
-            print("User saved")  # Confirm user saving.
+            print("User saved")
 
             verification_link = f"http://localhost:3000/verify/{user.verification_token}"
-            print(f"Verification link: {verification_link}")  # Log the verification link.
+            print(f"Verification link: {verification_link}")
 
-            print("Attempting to send verification email...")
+            # Now when you print this, it should show the email address.
+            print(f"Attempting to send verification email to {user.email}...")
             try:
                 send_mail(
                     'Verify your email',
@@ -44,14 +50,15 @@ def register_api(request):
                 )
                 print("Email sending function executed.")
             except Exception as e:
-                print(f"Error sending email: {e}")  # Catch and log any email sending errors.
+                print(f"Error sending email: {e}")
 
             print("Verification email should have been printed above.")
             return Response({'status': 'User created successfully. Check your email to verify.'}, status=status.HTTP_201_CREATED)
         else:
-            print("Form is invalid")  # Log form validation failure.
+            print("Form is invalid")
             print(form.errors)
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 def record_progress(request):
     if not request.user.is_authenticated:
