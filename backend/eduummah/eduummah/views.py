@@ -82,26 +82,41 @@ def login_api(request):
     if request.method == 'POST':
         username = request.data.get('username')
         password = request.data.get('password')
+        print(f"Attempting to log in user: {username}")  # Debugging output
         user = authenticate(username=username, password=password)
-        if user and user.is_active:
-            login(request, user)
-            response = Response({'status': 'Login successful.'}, status=status.HTTP_200_OK)
-            response['X-CSRFToken'] = get_token(request)
-            return response
+        if user:
+            print(f"User {username} authenticated. User active status: {user.is_active}")  # More debugging output
+            if user.is_active:
+                login(request, user)
+                return Response({'status': 'Login successful.'}, status=status.HTTP_200_OK)
+            else:
+                print(f"User {username} is not active.")  # Debugging output for inactive user
+                return Response({'error': 'Account is not activated.'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
+            print(f"Authentication failed for user: {username}")  # Debugging output for failed authentication
             return Response({'error': 'Invalid Credentials or Account Not Verified'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET'])
 def verify_email(request, token):
     try:
         user = CustomUser.objects.get(verification_token=token, email_verified=False)
+        print(f"User before activation: {user.email}, is_active: {user.is_active}")
+
         user.email_verified = True
         user.is_active = True
         user.verification_token = None
         user.save()
+
+        # Re-fetch user from database to confirm changes were committed
+        updated_user = CustomUser.objects.get(email=user.email)
+        print(f"User after activation attempt: {updated_user.email}, is_active: {updated_user.is_active}")
+
         return Response({'status': 'Email verified successfully.'}, status=status.HTTP_200_OK)
     except CustomUser.DoesNotExist:
+        print("Verification failed: No such token")
         return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET', 'POST'])
 def logout_view(request):
