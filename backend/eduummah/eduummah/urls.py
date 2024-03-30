@@ -22,6 +22,7 @@ urlpatterns = [
     path('register_api/', views.register_api, name='register_api'),
     path('login_api/', views.login_api, name='login_api'),
     path('logout/', logout_view, name='logout'),
+    path('verify-email/<uuid:token>/', views.verify_email, name='verify_email'),
 
     # DRF viewset routes prefixed with 'api/'
     path('api/', include(router.urls)),
