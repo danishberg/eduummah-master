@@ -6,6 +6,8 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 from .views import logout_view
+from django.contrib.auth import views as auth_views
+from django.urls import path
 
 # Initialize the router and register the viewsets
 router = DefaultRouter()
@@ -23,6 +25,8 @@ urlpatterns = [
     path('login_api/', views.login_api, name='login_api'),
     path('logout/', logout_view, name='logout'),
     path('verify-email/<uuid:token>/', views.verify_email, name='verify_email'),
+    path('verification/', include('verify_email.urls')),
+    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
 
     # DRF viewset routes prefixed with 'api/'
     path('api/', include(router.urls)),

@@ -39,39 +39,19 @@ account_activation_token = PasswordResetTokenGenerator()
 
 from rest_framework.decorators import api_view
 
+from verify_email.email_handler import send_verification_email
+
 @api_view(['POST'])
 def register_api(request):
-    print("Received POST data:", request.data)  # This should now work as expected.
     form = CustomUserCreationForm(request.data)
     if form.is_valid():
         user = form.save(commit=False)
-        user.is_active = False
+        user.is_active = False  # Set user as inactive until email is verified
         user.save()
-
-        # Generate UID and token for email verification
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = account_activation_token.make_token(user)
-
-        current_site = get_current_site(request)
-        activation_link = f"http://{current_site.domain}/verify-email/{uid}/{token}/"
-
-        message = f"Hi,\n\nPlease click on the link to confirm your registration:\n{activation_link}\n\nThank you!"
-
-        try:
-            send_mail(
-                'Activate your account.',
-                message,
-                'eduunoreply@gmail.com',
-                [user.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            print(f"Error sending email: {e}")
-            return Response({'error': 'Email could not be sent. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        send_verification_email(request, form)  # Sending verification email
         return Response({'status': 'User created successfully. Check your email to verify.'}, status=status.HTTP_201_CREATED)
-    else:
-        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
