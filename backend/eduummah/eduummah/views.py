@@ -16,6 +16,8 @@ from .serializers import CourseSerializer, LessonSerializer, UserProgressSeriali
 # You already import get_user_model, so you don't need to import it again
 
 
+from django.contrib.auth.hashers import make_password
+
 @api_view(['POST'])
 def register_api(request):
     print("Register API called")
@@ -28,9 +30,11 @@ def register_api(request):
             user.is_active = False
             user.verification_token = uuid.uuid4()
 
-            # Here, explicitly set the user's email field.
-            # Assuming the form's 'username' field is used for the email address.
+            # Explicitly set the user's email field.
             user.email = request.data.get('username')
+
+            # Hash the password before saving the user
+            user.password = make_password(request.data.get('password'))
 
             user.save()
             print("User saved")
@@ -38,7 +42,7 @@ def register_api(request):
             verification_link = f"http://localhost:3000/verify/{user.verification_token}"
             print(f"Verification link: {verification_link}")
 
-            # Now when you print this, it should show the email address.
+            # Attempt to send verification email
             print(f"Attempting to send verification email to {user.email}...")
             try:
                 send_mail(
@@ -77,45 +81,44 @@ def get_user_info(request):
     user_info = {'username': request.user.username, 'email': request.user.email, 'total_progress': total_progress}
     return JsonResponse(user_info)
 
-@api_view(['POST'])
-def login_api(request):
-    if request.method == 'POST':
-        username = request.data.get('username')
-        password = request.data.get('password')
-        print(f"Attempting to log in user: {username}")  # Debugging output
-        user = authenticate(username=username, password=password)
-        if user:
-            print(f"User {username} authenticated. User active status: {user.is_active}")  # More debugging output
-            if user.is_active:
-                login(request, user)
-                return Response({'status': 'Login successful.'}, status=status.HTTP_200_OK)
-            else:
-                print(f"User {username} is not active.")  # Debugging output for inactive user
-                return Response({'error': 'Account is not activated.'}, status=status.HTTP_401_UNAUTHORIZED)
-        else:
-            print(f"Authentication failed for user: {username}")  # Debugging output for failed authentication
-            return Response({'error': 'Invalid Credentials or Account Not Verified'}, status=status.HTTP_401_UNAUTHORIZED)
-
 
 @api_view(['GET'])
 def verify_email(request, token):
     try:
-        user = CustomUser.objects.get(verification_token=token, email_verified=False)
-        print(f"User before activation: {user.email}, is_active: {user.is_active}")
+        user = CustomUser.objects.get(verification_token=token)
+        if not user.email_verified:
+            user.email_verified = True
+            user.is_active = True
+            user.verification_token = None  # Clear the token after verification.
+            user.save()
 
-        user.email_verified = True
-        user.is_active = True
-        user.verification_token = None
-        user.save()
-
-        # Re-fetch user from database to confirm changes were committed
-        updated_user = CustomUser.objects.get(email=user.email)
-        print(f"User after activation attempt: {updated_user.email}, is_active: {updated_user.is_active}")
-
-        return Response({'status': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+            # Confirm the update for debugging.
+            print(f"Verification successful for {user.username}. Active: {user.is_active}, Email Verified: {user.email_verified}")
+            return Response({'status': 'Email verification successful. Please log in.'}, status=status.HTTP_200_OK)
+        else:
+            # User is already verified.
+            print(f"User {user.username} is already verified.")
+            return Response({'error': 'Email already verified.'}, status=status.HTTP_400_BAD_REQUEST)
     except CustomUser.DoesNotExist:
-        print("Verification failed: No such token")
-        return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
+        print("Invalid or expired token.")
+        return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def login_api(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    user = authenticate(username=username, password=password)
+    if user:
+        if user.is_active and user.email_verified:
+            login(request, user)
+            return Response({'status': 'Login successful'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Account not activated or email not verified'}, status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
 
 
 @api_view(['GET', 'POST'])
