@@ -2,10 +2,19 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 
-
 class CustomUser(AbstractUser):
     email_verified = models.BooleanField(default=False)
-    verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    email = models.EmailField('email address', unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []  # 'username' is not required, nor listed here
+
+    def save(self, *args, **kwargs):
+        if not self.username:
+            self.username = uuid.uuid4().hex  # Assign a unique value
+        super().save(*args, **kwargs)
+
+
 
 # Course model definition
 class Course(models.Model):

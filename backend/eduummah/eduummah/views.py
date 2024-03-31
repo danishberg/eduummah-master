@@ -14,54 +14,65 @@ from .models import CustomUser, UserProgress, Lesson, Course  # Correctly import
 from .serializers import CourseSerializer, LessonSerializer, UserProgressSerializer
 
 # You already import get_user_model, so you don't need to import it again
-
-
 from django.contrib.auth.hashers import make_password
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator as token_generator
+
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.sites.shortcuts import get_current_site
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .forms import CustomUserCreationForm
+from django.contrib.auth.hashers import make_password
+import uuid
+
+from rest_framework.decorators import api_view
+
+# Token generator for the email confirmation
+account_activation_token = PasswordResetTokenGenerator()
+
+from rest_framework.decorators import api_view
 
 @api_view(['POST'])
 def register_api(request):
-    print("Register API called")
-    if request.method == 'POST':
-        print("Received data:", request.data)
-        form = CustomUserCreationForm(request.data)
-        if form.is_valid():
-            print("Form is valid")
-            user = form.save(commit=False)
-            user.is_active = False
-            user.verification_token = uuid.uuid4()
+    print("Received POST data:", request.data)  # This should now work as expected.
+    form = CustomUserCreationForm(request.data)
+    if form.is_valid():
+        user = form.save(commit=False)
+        user.is_active = False
+        user.save()
 
-            # Explicitly set the user's email field.
-            user.email = request.data.get('username')
+        # Generate UID and token for email verification
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = account_activation_token.make_token(user)
 
-            # Hash the password before saving the user
-            user.password = make_password(request.data.get('password'))
+        current_site = get_current_site(request)
+        activation_link = f"http://{current_site.domain}/verify-email/{uid}/{token}/"
 
-            user.save()
-            print("User saved")
+        message = f"Hi,\n\nPlease click on the link to confirm your registration:\n{activation_link}\n\nThank you!"
 
-            verification_link = f"http://localhost:3000/verify/{user.verification_token}"
-            print(f"Verification link: {verification_link}")
+        try:
+            send_mail(
+                'Activate your account.',
+                message,
+                'eduunoreply@gmail.com',
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            return Response({'error': 'Email could not be sent. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # Attempt to send verification email
-            print(f"Attempting to send verification email to {user.email}...")
-            try:
-                send_mail(
-                    'Verify your email',
-                    f'Please click on the link to verify your email: {verification_link}',
-                    'eduunoreply@gmail.com',
-                    [user.email],
-                    fail_silently=False,
-                )
-                print("Email sending function executed.")
-            except Exception as e:
-                print(f"Error sending email: {e}")
+        return Response({'status': 'User created successfully. Check your email to verify.'}, status=status.HTTP_201_CREATED)
+    else:
+        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            print("Verification email should have been printed above.")
-            return Response({'status': 'User created successfully. Check your email to verify.'}, status=status.HTTP_201_CREATED)
-        else:
-            print("Form is invalid")
-            print(form.errors)
-            return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def record_progress(request):
@@ -82,41 +93,66 @@ def get_user_info(request):
     return JsonResponse(user_info)
 
 
-@api_view(['GET'])
-def verify_email(request, token):
+
+from django.contrib.auth.tokens import default_token_generator
+from django.http import HttpResponse
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+def verify_email(request, uidb64, token):
     try:
-        user = CustomUser.objects.get(verification_token=token)
-        if not user.email_verified:
-            user.email_verified = True
-            user.is_active = True
-            user.verification_token = None  # Clear the token after verification.
-            user.save()
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
 
-            # Confirm the update for debugging.
-            print(f"Verification successful for {user.username}. Active: {user.is_active}, Email Verified: {user.email_verified}")
-            return Response({'status': 'Email verification successful. Please log in.'}, status=status.HTTP_200_OK)
-        else:
-            # User is already verified.
-            print(f"User {user.username} is already verified.")
-            return Response({'error': 'Email already verified.'}, status=status.HTTP_400_BAD_REQUEST)
-    except CustomUser.DoesNotExist:
-        print("Invalid or expired token.")
-        return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_404_NOT_FOUND)
+    if user is not None and default_token_generator.check_token(user, token):
+        # Update is_active attribute to True
+        user.is_active = True
+        user.save()
+        return HttpResponse('Your account has been activated successfully.')
+    else:
+        return HttpResponse('Invalid activation link or token.', status=400)
 
+
+
+
+
+from django.contrib.auth import authenticate, login
+from rest_framework.response import Response
+from rest_framework import status
+
+
+#from django.http import HttpResponse
+#from django.views.decorators.csrf import csrf_exempt
+#@csrf_exempt 
+
+from django.contrib.auth import authenticate, login
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
 
 @api_view(['POST'])
 def login_api(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    user = authenticate(username=username, password=password)
-    if user:
-        if user.is_active and user.email_verified:
+    if request.method == 'POST':
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = authenticate(username=email, password=password)
+
+        if user and user.is_active and user.email_verified:
             login(request, user)
             return Response({'status': 'Login successful'}, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Account not activated or email not verified'}, status=status.HTTP_401_UNAUTHORIZED)
-    else:
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Invalid credentials or account not verified.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+
+
+
 
 
 
