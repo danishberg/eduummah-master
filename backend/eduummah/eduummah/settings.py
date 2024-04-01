@@ -51,7 +51,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                 'DIRS': [os.path.join(BASE_DIR, 'frontend/build')],
             ],
         },
     },
@@ -80,6 +79,7 @@ CSRF_COOKIE_HTTPONLY = True
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 
 VERIFY_EMAIL_LOGIN_URL_NAME = 'login'
+
 LOGIN_URL = 'login'
 
 # Custom user model remains the same

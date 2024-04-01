@@ -23,11 +23,14 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('verification/', include('verify_email.urls')),
     path('verify-email/<uidb64>/<token>/', views.verify_email, name='email-verify'),
-    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     re_path(r'^.*', TemplateView.as_view(template_name='index.html'), name='app'),
 ]
+
+urlpatterns = [
+    path('login/', TemplateView.as_view(template_name='index.html'), name='login'),
+] + urlpatterns
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
