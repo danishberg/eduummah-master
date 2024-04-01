@@ -41,16 +41,27 @@ from rest_framework.decorators import api_view
 
 from verify_email.email_handler import send_verification_email
 
+
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.conf import settings
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .forms import CustomUserCreationForm
+from verify_email.email_handler import send_verification_email
+
 @api_view(['POST'])
 def register_api(request):
     form = CustomUserCreationForm(request.data)
     if form.is_valid():
-        user = form.save(commit=False)
-        user.is_active = False  # Set user as inactive until email is verified
-        user.save()
-        send_verification_email(request, form)  # Sending verification email
-        return Response({'status': 'User created successfully. Check your email to verify.'}, status=status.HTTP_201_CREATED)
-    return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+        inactive_user = send_verification_email(request, form)
+        print(inactive_user.email)  # Just for checking; remove or secure this in production.
+        return Response({
+            'status': 'User created successfully. Check your email to verify.'
+        }, status=status.HTTP_201_CREATED)
+    else:
+        return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -79,23 +90,30 @@ from django.http import HttpResponse
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 User = get_user_model()
 
+@api_view(['POST'])
 def verify_email(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.email_verified = True  # Assuming you want to set email_verified to True
+            user.save()
+            login_url = reverse('login')  # Use the name given to the URL pattern
+            return HttpResponseRedirect(login_url)  # Redirect to the login page
+        else:
+            return HttpResponse('Invalid activation link or token.', status=400)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
+        return HttpResponse('Invalid activation link.', status=400)
 
-    if user is not None and default_token_generator.check_token(user, token):
-        # Update is_active attribute to True
-        user.is_active = True
-        user.save()
-        return HttpResponse('Your account has been activated successfully.')
-    else:
-        return HttpResponse('Invalid activation link or token.', status=400)
+
+   
+
 
 
 
