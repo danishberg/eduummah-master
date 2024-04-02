@@ -100,7 +100,7 @@ def verify_email(request, uidb64, token):
         user = User.objects.get(pk=uid)
         if user is not None and default_token_generator.check_token(user, token):
             user.is_active = True
-            user.email_verified = True  # Assuming you want to set email_verified to True
+#            user.email_verified = True  # Assuming you want to set email_verified to True
             #user.save() --- 02/04 TEST ATTENTION DO NOT FORGET TO EDIT THIS LINE - UTMOST IMPORTANCE - TESTING IN PROGRESS
             login_url = reverse('login')  # Use the name given to the URL pattern
             return HttpResponseRedirect(login_url)  # Redirect to the login page
@@ -138,7 +138,8 @@ def login_api(request):
         password = request.data.get('password')
         user = authenticate(username=email, password=password)
 
-    if user and user.is_active and user.email_verified:
+#   if user and user.is_active and user.email_verified:
+    if user and user.is_active:
             login(request, user)
             return Response({'status': 'Login successful'}, status=status.HTTP_200_OK)
     else:
