@@ -22,7 +22,7 @@ urlpatterns = [
     path('login_api/', views.login_api, name='login_api'),
     path('logout/', views.logout_view, name='logout'),
     path('verification/', include('verify_email.urls')),
-    path('verify-email/<uidb64>/<token>/', views.verify_email, name='email-verify'),
+#    path('verify-email/<uidb64>/<token>/', views.verify_email, name='email-verify'),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     re_path(r'^.*', TemplateView.as_view(template_name='index.html'), name='app'),

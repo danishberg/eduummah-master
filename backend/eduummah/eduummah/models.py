@@ -3,7 +3,7 @@ from django.db import models
 import uuid
 
 class CustomUser(AbstractUser):
-    email_verified = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=True)
     email = models.EmailField('email address', unique=True)
 
     USERNAME_FIELD = 'email'
