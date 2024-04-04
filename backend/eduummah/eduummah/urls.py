@@ -25,6 +25,8 @@ urlpatterns = [
 #    path('verify-email/<uidb64>/<token>/', views.verify_email, name='email-verify'),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('set_user_details/', views.set_user_details, name='set_user_details'),
+    path('get_user_details/', views.get_user_details, name='get_user_details'),
     re_path(r'^.*', TemplateView.as_view(template_name='index.html'), name='app'),
 ]
 

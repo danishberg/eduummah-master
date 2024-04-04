@@ -126,10 +126,10 @@ from rest_framework import status
 #from django.views.decorators.csrf import csrf_exempt
 #@csrf_exempt 
 
-from django.contrib.auth import authenticate, login
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import api_view
+from django.contrib.auth import authenticate, login
 
 @api_view(['POST'])
 def login_api(request):
@@ -138,12 +138,20 @@ def login_api(request):
         password = request.data.get('password')
         user = authenticate(username=email, password=password)
 
-#   if user and user.is_active and user.email_verified:
-    if user and user.is_active:
+        # Check if authentication is successful and the user is active.
+        if user is not None and user.is_active:
             login(request, user)
+            print(f"Session Key: {request.session.session_key}")  # Debugging line
+            print(f"User Authenticated: {request.user.is_authenticated}")  # Debugging line
+
+            # Debugging: Confirm the user is authenticated.
+            assert request.user.is_authenticated, "User should be authenticated after login."
+
+            # Return success response.
             return Response({'status': 'Login successful'}, status=status.HTTP_200_OK)
-    else:
-            return Response({'error': 'Invalid credentials or account not verified.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # If authentication fails or user is inactive, return an error.
+        return Response({'error': 'Invalid credentials or account not verified.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 
@@ -167,3 +175,56 @@ class UserProgressViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return UserProgress.objects.filter(user=request.user)
     serializer_class = UserProgressSerializer
+
+
+# Account Page Credentials Settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+import json
+
+@csrf_exempt
+def set_user_details(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')  # Assuming we're using email to identify the user
+        name = data.get('name')
+        surname = data.get('surname')
+        dob = data.get('dob')
+
+        User = get_user_model()
+        try:
+            user_profile = User.objects.get(email=email)
+            if user_profile.details_set:
+                return JsonResponse({'error': 'Account details can only be set once.'}, status=400)
+
+            user_profile.name = name
+            user_profile.surname = surname
+            user_profile.date_of_birth = dob
+            user_profile.details_set = True
+            user_profile.save()
+
+            return JsonResponse({'success': 'Account details updated successfully.'})
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@login_required
+def get_user_details(request):
+    if request.user.is_authenticated:
+        print("Fetching user details for:", request.user.email)
+        return JsonResponse({
+            'email': request.user.email,
+            'name': request.user.first_name,
+            'surname': request.user.last_name,
+            'dob': request.user.profile.date_of_birth.strftime('%Y-%m-%d') if request.user.profile.date_of_birth else None,
+        })
+    else:
+        print("User not authenticated")
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+
+
+
