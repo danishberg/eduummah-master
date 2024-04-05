@@ -1,62 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext'; // Adjust the path as necessary
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [csrfToken, setCsrfToken] = useState('');
-  const navigate = useNavigate(); // Instantiate useNavigate for later use //
+  const [csrfToken, setCsrfToken] = useState(''); // Declare setCsrfToken using useState
+  const navigate = useNavigate();
+  const { login } = useAuth(); // Utilize the login function from AuthContext
 
   useEffect(() => {
-    // Retrieve and set the CSRF token
-    const csrftoken = getCookie('csrftoken');
-    setCsrfToken(csrftoken);
-    console.log('CSRF token retrieved:', csrftoken);
+    // Suppose getCsrfToken function fetches token from the server and updates state
+    const getCsrfToken = async () => {
+      const response = await fetch('/get-csrf-token');
+      const data = await response.json();
+      setCsrfToken(data.csrfToken); // Set CSRF token using setCsrfToken
+    };
+
+    getCsrfToken();
   }, []);
 
-  // In your handleSubmit function in Login.js
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+    setError('');
+
     try {
-      const response = await fetch('http://localhost:8000/login_api/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken,
-        },
-        body: JSON.stringify({ email: email, password: password }),
-        credentials: 'include',
-      });
-  
-      if (response.ok) {
-        console.log('Login successful');
-        sessionStorage.setItem('isAuthenticated', 'true');  // Set authentication status
-        navigate('/dashboard');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error);
-      }
+      const userCredentials = { email, password, csrfToken };
+      await login(userCredentials);
+      navigate('/dashboard');
     } catch (error) {
-      setError('An unexpected error occurred.');
+      setError('Login failed. Please try again.');
     }
   };
-
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
 
   return (
     <div>
@@ -66,14 +42,14 @@ const Login = () => {
           type="email"
           placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           required
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
           required
         />
         <button type="submit">Login</button>

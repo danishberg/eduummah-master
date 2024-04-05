@@ -74,14 +74,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
-CSRF_COOKIE_SECURE = False # For production change to True | For dev change to False
-SESSION_COOKIE_DOMAIN = None # For dev 
+CSRF_COOKIE_SECURE = False # For production change to True | For dev change to False | Stage 1
+SESSION_COOKIE_DOMAIN = None # For dev | Stage 1
+SESSION_COOKIE_SECURE = False # For dev | Stage 1
+SESSION_ENGINE = 'django.contrib.sessions.backends.db' # For dev | Stage 1
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 CSRF_COOKIE_HTTPONLY = False
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 
 VERIFY_EMAIL_LOGIN_URL_NAME = 'login'
 
-LOGIN_URL = 'login'
+LOGIN_URL = '/login/'
 
 # Custom user model remains the same
 AUTH_USER_MODEL = 'eduummah.CustomUser'

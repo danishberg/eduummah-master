@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Outlet } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './components/Home';
@@ -14,59 +14,57 @@ import Dashboard from './components/Dashboard';
 import ProgressPage from './components/ProgressPage';
 import StudyPage from './components/StudyPage';
 import AccountPage from './components/AccountPage';
-import VerifyEmail from './components/VerifyEmail'; // Ensure this is imported.
+import VerifyEmail from './components/VerifyEmail';
 
-// Import all other necessary components and the PrivateRoute
+import { AuthProvider } from './components/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
+// Create a component that decides whether to show the header
+const Layout = () => {
+  const location = useLocation();
 
-function App() {
-  const getEduTokenBalance = async () => {
-    try {
-      const response = await fetch('YOUR_BACKEND_ENDPOINT');
-      await response.json(); // Presumably updating state or context
-    } catch (error) {
-      console.error('Error fetching EduToken balance:', error);
-    }
-  };
-
-  useEffect(() => {
-    getEduTokenBalance();
-  }, []);
+  // Do not show the main header on the dashboard and its child routes
+  const showHeader = !location.pathname.startsWith('/dashboard');
 
   return (
-    <Router>
-      <div className="App">
+    <div className="App"> {/* Add App class for centering */}
+      {showHeader && <Header />}
+      <div className="main-content center"> {/* Apply centering styles */}
+        <Outlet />
+      </div>
+      <Footer />
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
         <Routes>
-          <Route path="/" element={<>
-            <Header />
-            <div className="main-content"><Outlet /></div>
-            <Footer />
-          </>}>
+          <Route path="/" element={<Layout />}>
             <Route index element={<Welcome />} />
-            <Route path="Welcome" element={<Welcome />} />
-            <Route path="Home" element={<Home />} />
+            <Route path="welcome" element={<Welcome />} />
+            <Route path="home" element={<Home />} />
             <Route path="courses" element={<Courses />} />
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
-            <Route path="Login" element={<Login />} />
-            <Route path="Register" element={<Register />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="verify/:token" element={<VerifyEmail />} />
+            {/* Nested routes under "/" will use the Layout and hence have the Header and Footer */}
           </Route>
-          
-          {/* Dedicated route structure for Dashboard to avoid displaying the main Header */}
-                        {/* Protect the dashboard and its nested routes */}
-          <Route element={<PrivateRoute />}>
-            <Route path="dashboard" element={<Dashboard />}>
-              <Route index element={<p>Select an option from the dashboard.</p>} />
-              <Route path="progress" element={<ProgressPage />} />
-              <Route path="study" element={<StudyPage />} />
-              <Route path="account" element={<AccountPage />} />
-            </Route>
+
+          {/* Dashboard route is outside the Layout, so it won't have the Header and Footer from Layout */}
+          <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>}>
+            <Route index element={<p>Select an option from the dashboard.</p>} />
+            <Route path="progress" element={<ProgressPage />} />
+            <Route path="study" element={<StudyPage />} />
+            <Route path="account" element={<AccountPage />} />
           </Route>
-            <Route path="/verify/:token" element={<VerifyEmail />} /> {/* This should be outside the dashboard route */}
         </Routes>
-      </div>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }
 
