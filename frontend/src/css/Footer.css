@@ -1,0 +1,9 @@
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #ffffff; /* Change the background color if needed #f8f9fa; */
+    padding: 20px 0; /* Adjust the padding as desired */
+    text-align: center; /* Center the text */
+  }
+  

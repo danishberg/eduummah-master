@@ -1,0 +1,58 @@
+/* Header.css */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgb(255, 255, 255);
+  color: #000000;
+  padding: 1rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center; /* Center the logo vertically */
+}
+
+.logo img {
+  max-width: 50px; /* Adjust the maximum width as needed */
+  height: auto; /* Maintain aspect ratio */
+  margin-left: 50px; /* Add some space between the logo and text */
+}
+
+.logo-text {
+  color: black; /* Make the text purple */
+  text-decoration: none; /* Remove underline */
+  padding-left: 20px;
+  font-size: 1 rem; /* Increase font size */
+  font-family: 'Arial', sans-serif; /* Use a specific font family */
+  font-weight: bold; /* Make the text bold */
+}
+
+.nav-menu {
+  list-style-type: none;
+  display: flex;
+}
+
+.nav-menu li {
+  margin-right: 1rem;
+}
+
+.nav-menu li a {
+  color: #000000;
+  text-decoration: none;
+}
+
+.auth {
+  display: flex;
+  padding-right: 50px;
+}
+
+.auth-link {
+  color: #000000;
+  margin-left: 1rem;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
