@@ -19,30 +19,29 @@ import VerifyEmail from './components/VerifyEmail';
 import { AuthProvider } from './components/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
-// Create a component that decides whether to show the header
 const Layout = () => {
   const location = useLocation();
-
-  // Do not show the main header on the dashboard and its child routes
-  const showHeader = !location.pathname.startsWith('/dashboard');
+  const showHeaderFooter = !location.pathname.startsWith('/dashboard');
 
   return (
-    <div className="App"> {/* Add App class for centering */}
-      {showHeader && <Header />}
-      <div className="main-content center"> {/* Apply centering styles */}
+    <div className="App">
+      {showHeaderFooter && <Header />}
+      <div className="main-content center">
         <Outlet />
       </div>
-      <Footer />
+      {showHeaderFooter && <Footer />}
     </div>
   );
 };
 
+// Updated App component
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Layout />}>
+            {/* Public Routes */}
             <Route index element={<Welcome />} />
             <Route path="welcome" element={<Welcome />} />
             <Route path="home" element={<Home />} />
@@ -52,15 +51,14 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="verify/:token" element={<VerifyEmail />} />
-            {/* Nested routes under "/" will use the Layout and hence have the Header and Footer */}
-          </Route>
 
-          {/* Dashboard route is outside the Layout, so it won't have the Header and Footer from Layout */}
-          <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>}>
-            <Route index element={<p>Select an option from the dashboard.</p>} />
-            <Route path="progress" element={<ProgressPage />} />
-            <Route path="study" element={<StudyPage />} />
-            <Route path="account" element={<AccountPage />} />
+            {/* Nested Dashboard Routes inside Layout to inherit centering */}
+            <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>}>
+              <Route index element={<p>Select an option from the dashboard.</p>} />
+              <Route path="progress" element={<ProgressPage />} />
+              <Route path="study" element={<StudyPage />} />
+              <Route path="account" element={<AccountPage />} />
+            </Route>
           </Route>
         </Routes>
       </Router>
