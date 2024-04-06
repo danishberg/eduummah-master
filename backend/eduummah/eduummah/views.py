@@ -158,14 +158,20 @@ def login_api(request):
 
         if user is not None and user.is_active:
             login(request, user)
-            request.session.save()
+        #    request.session.save()
 
             logger.info(f"Session Key after login: {request.session.session_key}")
             logger.info(f"User Authenticated after login: {request.user.is_authenticated}")
+            logger.info(f"Current User: {request.user.get_username()}")
 
-            request.session['user_logged_in'] = True
+        #    request.session['user_logged_in'] = True
 
-            return Response({'status': 'Login successful', 'sessionKey': request.session.session_key}, status=status.HTTP_200_OK)
+            return Response({
+                'status': 'Login successful', 
+                'sessionKey': request.session.session_key,
+                'email': user.email  # Sending user email to the frontend (if needed)
+            }, status=status.HTTP_200_OK)
+        
         else:
             logger.warning("Login failed: Invalid credentials or inactive account.")
             return Response({'error': 'Invalid credentials or account not verified.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -242,8 +248,14 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 
 def get_user_details(request):
+
+    session_key_msg = f"Session ID: {request.session.session_key}" if hasattr(request.session, 'session_key') else "No Session Key"
+    logger.info(session_key_msg)
+
     logger.info(f"Session ID: {request.session.session_key if hasattr(request.session, 'session_key') else 'No Session Key'}")
     logger.info(f"User Authenticated: {request.user.is_authenticated}")
+
+    logger.info(f"Current User: {request.user.get_username()}")
 
     if request.user.is_authenticated:
         user_data = {

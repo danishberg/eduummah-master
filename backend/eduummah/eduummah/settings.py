@@ -117,7 +117,7 @@ CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http:
 # CSRF and Session settings
 
 
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False # For dev | Stage 1 |
 SESSION_COOKIE_SECURE = False # For dev | Stage 1 | True for HTTPS only
 
 VERIFY_EMAIL_LOGIN_URL_NAME = 'login'

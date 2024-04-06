@@ -91,7 +91,7 @@ const getCSRFToken = () => {
       return;
     }
 
-    fetch('/set_user_details/', {
+    fetch('http://localhost:8000/set_user_details/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
