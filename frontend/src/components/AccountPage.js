@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AccountPage = () => {
   const [userData, setUserData] = useState({
+    email: '',
     name: '',
     surname: '',
     dob: '',
@@ -12,26 +14,57 @@ const AccountPage = () => {
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
+
+  // A utility function to get a cookie by name.
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Extract CSRF token value correctly
+const getCSRFToken = () => {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrftoken'))
+    .split('=')[1];
+};
 
   useEffect(() => {
     fetch('http://localhost:8000/get_user_details/', {
       method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),  // Use getCookie to retrieve the CSRF token
+      },
       credentials: 'include',
     })
     .then(response => {
-      if (response.redirected) {
-        throw new Error('Session expired or user not logged in. Redirecting to login.');
-      }
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      if (response.status === 401 || response.status === 403) {
+        setError('Session expired or unauthorized access. Redirecting to login.');
+        navigate('/login');  // Redirect to login page
+      //   return null;  -  Prevent further processing in the promise chain | Stage 2 Do not forget to check again if works
+      } else if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`);
       }
       return response.json();
     })
+    
     .then(data => {
-      if (data && data.email) {
+      if (data) {  // Check if data is not null
         setUserData(prevState => ({
           ...prevState,
-          email: data.email,  // Display email without editing capability
+          email: data.email,
           name: data.name,
           surname: data.surname,
           dob: data.dob,
@@ -43,7 +76,7 @@ const AccountPage = () => {
       console.error('Failed to load account details:', error);
       setError(`Failed to load account details: ${error.message}`);
     });
-  }, []);
+  }, [navigate]);
 
   const handleChange = (event) => {
     setUserData({ ...userData, [event.target.name]: event.target.value });
@@ -62,8 +95,11 @@ const AccountPage = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
       },
+      credentials: 'include',
       body: JSON.stringify({
+        email: userData.email,
         name: userData.name,
         surname: userData.surname,
         dob: userData.dob,
@@ -91,7 +127,7 @@ const AccountPage = () => {
   return (
     <div>
       <h2>My Account</h2>
-      <p>Email: {userData.email}</p> {/* Display email without allowing edits */}
+      <p>Email: {userData.email}</p>
       {userData.isSubmitted ? (
         <>
           <p>Name: {userData.name}</p>

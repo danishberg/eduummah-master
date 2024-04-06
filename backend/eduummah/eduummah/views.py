@@ -131,27 +131,48 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate, login
 
+from django.contrib.auth import authenticate, login
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+import logging
+
+# Set up basic configuration for logging
+logger = logging.getLogger(__name__)
+
+from django.contrib.auth import login, authenticate
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+import logging
+
+logger = logging.getLogger(__name__)
+
 @api_view(['POST'])
 def login_api(request):
+    logger.info("Initiating login process.")
     if request.method == 'POST':
         email = request.data.get('email')
         password = request.data.get('password')
-        user = authenticate(username=email, password=password)
+        user = authenticate(request, email=email, password=password)
 
-        # Check if authentication is successful and the user is active.
         if user is not None and user.is_active:
             login(request, user)
-            print(f"Session Key: {request.session.session_key}")  # Debugging line
-            print(f"User Authenticated: {request.user.is_authenticated}")  # Debugging line
+            request.session.save()
 
-            # Debugging: Confirm the user is authenticated.
-            assert request.user.is_authenticated, "User should be authenticated after login."
+            logger.info(f"Session Key after login: {request.session.session_key}")
+            logger.info(f"User Authenticated after login: {request.user.is_authenticated}")
 
-            # Return success response.
-            return Response({'status': 'Login successful'}, status=status.HTTP_200_OK)
+            request.session['user_logged_in'] = True
 
-        # If authentication fails or user is inactive, return an error.
-        return Response({'error': 'Invalid credentials or account not verified.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'status': 'Login successful', 'sessionKey': request.session.session_key}, status=status.HTTP_200_OK)
+        else:
+            logger.warning("Login failed: Invalid credentials or inactive account.")
+            return Response({'error': 'Invalid credentials or account not verified.'}, status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        logger.warning("login_api called with non-POST method.")
+        return Response({'error': 'POST method required.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 
 
@@ -212,19 +233,27 @@ def set_user_details(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required
-def get_user_details(request):
-    if request.user.is_authenticated:
-        print("Fetching user details for:", request.user.email)
-        return JsonResponse({
-            'email': request.user.email,
-            'name': request.user.first_name,
-            'surname': request.user.last_name,
-            'dob': request.user.profile.date_of_birth.strftime('%Y-%m-%d') if request.user.profile.date_of_birth else None,
-        })
-    else:
-        print("User not authenticated")
-        return JsonResponse({'error': 'Not authenticated'}, status=401)
+import logging
 
+logger = logging.getLogger(__name__)
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+
+def get_user_details(request):
+    logger.info(f"Session ID: {request.session.session_key if hasattr(request.session, 'session_key') else 'No Session Key'}")
+    logger.info(f"User Authenticated: {request.user.is_authenticated}")
+
+    if request.user.is_authenticated:
+        user_data = {
+            'email': request.user.email,
+            'name': request.user.first_name or '',
+            'surname': request.user.last_name or '',
+            'dob': str(request.user.profile.date_of_birth) if request.user.profile.date_of_birth else '',
+        }
+        return JsonResponse(user_data)
+    else:
+        return JsonResponse({'error': 'User is not authenticated'}, status=401)
 
 

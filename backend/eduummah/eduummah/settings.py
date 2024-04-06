@@ -31,15 +31,16 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'eduummah.urls'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -64,6 +65,28 @@ DATABASES = {
     }
 }
 
+
+import logging
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -73,14 +96,29 @@ STATICFILES_DIRS = [BASE_DIR.parent.parent / 'frontend' / 'build' / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 CSRF_COOKIE_SECURE = False # For production change to True | For dev change to False | Stage 1
-SESSION_COOKIE_DOMAIN = None # For dev | Stage 1
-SESSION_COOKIE_SECURE = False # For dev | Stage 1
-SESSION_ENGINE = 'django.contrib.sessions.backends.db' # For dev | Stage 1
+SESSION_COOKIE_DOMAIN = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000'] # For dev | Stage 1 | None by default / for local testing
+SESSION_COOKIE_SECURE = False # For dev | Stage 1 | True for HTTPS only
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # For dev | Stage 1 | Stores session data in the database
+SESSION_COOKIE_HTTPONLY = True  # JavaScript should not access the session cookie
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False # Set to True if you want browser-length sessions
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+
+CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None' if your frontend is on a different domain
+SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None' if your frontend is on a different domain
+#SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax' # or Strict | Stage 2
+#CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax' # or Strict | Stage 2
 CSRF_COOKIE_HTTPONLY = False
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
+
+# CSRF and Session settings
+
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False # For dev | Stage 1 | True for HTTPS only
 
 VERIFY_EMAIL_LOGIN_URL_NAME = 'login'
 
@@ -100,3 +138,8 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 # Print statements to verify the environment variables:
 print("EMAIL_HOST_USER:", EMAIL_HOST_USER)
 print("EMAIL_HOST_PASSWORD: [REDACTED]")  # Do not print the actual password.
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default ModelBackend
+    'eduummah.backends.EmailAuthBackend',  # Your custom backend
+]
