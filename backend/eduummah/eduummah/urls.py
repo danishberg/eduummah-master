@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('set_user_details/', views.set_user_details, name='set_user_details'),
     path('get_user_details/', views.get_user_details, name='get_user_details'),
+    path('check_session/', views.check_session, name='check_session'),
     re_path(r'^.*', TemplateView.as_view(template_name='index.html'), name='app'),
 ]
 

@@ -16,6 +16,24 @@ const AccountPage = () => {
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
+
+  function getCsrfToken() {
+    let csrfToken = null;
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith('csrftoken=')) {
+        csrfToken = cookie.substring('csrftoken='.length);
+        break;
+      }
+    }
+    return csrfToken;
+  }
+  
+  // Then use this function when making fetch calls
+  const csrfToken = getCsrfToken();
+
+  
   // A utility function to get a cookie by name.
   function getCookie(name) {
     let cookieValue = null;

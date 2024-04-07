@@ -50,6 +50,9 @@ from verify_email.email_handler import send_verification_email
 
 @api_view(['POST'])
 def register_api(request):
+
+    logger.info(f"Session ID Register_API: {request.session.session_key}")
+
     form = CustomUserCreationForm(request.data)
     if form.is_valid():
         inactive_user = send_verification_email(request, form)
@@ -74,6 +77,9 @@ def record_progress(request):
     return redirect('some_template_to_show_progress')
 
 def get_user_info(request):
+
+    logger.info(f"Session ID get_user_info: {request.session.session_key}")
+
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'User is not logged in.'}, status=401)
     progress_items = UserProgress.objects.filter(user=request.user)
@@ -158,13 +164,13 @@ def login_api(request):
 
         if user is not None and user.is_active:
             login(request, user)
-        #    request.session.save()
+            request.session.save()
 
             logger.info(f"Session Key after login: {request.session.session_key}")
             logger.info(f"User Authenticated after login: {request.user.is_authenticated}")
             logger.info(f"Current User: {request.user.get_username()}")
 
-        #    request.session['user_logged_in'] = True
+            request.session['user_logged_in'] = True
 
             return Response({
                 'status': 'Login successful', 
@@ -185,6 +191,7 @@ def login_api(request):
 
 @api_view(['GET', 'POST'])
 def logout_view(request):
+    logger.info(f"Session ID logout_view: {request.session.session_key}")
     logout(request)
     return JsonResponse({'message': 'Logged out successfully'})
 
@@ -211,8 +218,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 import json
 
-@csrf_exempt
+#@loginrequired
 def set_user_details(request):
+
+    logger.info(f"Session ID set_user_details: {request.session.session_key}")
+
     if request.method == 'POST':
         data = json.loads(request.body)
         email = data.get('email')  # Assuming we're using email to identify the user
@@ -249,12 +259,9 @@ from django.http import HttpResponse
 
 def get_user_details(request):
 
-    session_key_msg = f"Session ID: {request.session.session_key}" if hasattr(request.session, 'session_key') else "No Session Key"
-    logger.info(session_key_msg)
-
-    logger.info(f"Session ID: {request.session.session_key if hasattr(request.session, 'session_key') else 'No Session Key'}")
+    logger.info(f"Session ID get_user_details: {request.session.session_key if hasattr(request.session, 'session_key') else 'No Session Key'}")
     logger.info(f"User Authenticated: {request.user.is_authenticated}")
-
+    logger.info(f"User Active: {request.user.is_active}")
     logger.info(f"Current User: {request.user.get_username()}")
 
     if request.user.is_authenticated:
@@ -269,3 +276,14 @@ def get_user_details(request):
         return JsonResponse({'error': 'User is not authenticated'}, status=401)
 
 
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+
+@api_view(['GET'])
+def check_session(request):
+    """
+    Endpoint to check if the user is authenticated.
+    """
+    is_authenticated = request.user.is_authenticated
+    logger.info(f"Session ID check_session: {request.session.session_key}")
+    return JsonResponse({'isAuthenticated': is_authenticated})
