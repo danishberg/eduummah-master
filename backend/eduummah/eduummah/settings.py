@@ -122,7 +122,7 @@ SESSION_COOKIE_SECURE = False # For dev | Stage 1 | True for HTTPS only
 
 VERIFY_EMAIL_LOGIN_URL_NAME = 'login'
 
-LOGIN_URL = '/login/'
+LOGIN_URL = 'login'
 
 # Custom user model remains the same
 AUTH_USER_MODEL = 'eduummah.CustomUser'

@@ -22,7 +22,7 @@ urlpatterns = [
     path('login_api/', views.login_api, name='login_api'),
     path('logout/', views.logout_view, name='logout'),
     path('verification/', include('verify_email.urls')),
-#    path('verify-email/<uidb64>/<token>/', views.verify_email, name='email-verify'),
+    path('verify-email/<uidb64>/<token>/', views.verify_email, name='email-verify'),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('set_user_details/', views.set_user_details, name='set_user_details'),
