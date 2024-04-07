@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Keep your secret key and debug setting as before
 SECRET_KEY = 'django-insecure-nhz)7el26^)h@ix#9&e^@g((=r=-8tx+61bt=jmk$yb1)is%vl'
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Installed apps, middleware, and other settings remain unchanged
 INSTALLED_APPS = [
@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'verify_email.apps.VerifyEmailConfig',
 ]
-
+#     
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -100,6 +100,7 @@ CORS_ORIGIN_WHITELIST = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http
 CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 CSRF_COOKIE_SECURE = False # For production change to True | For dev change to False | Stage 1
 SESSION_COOKIE_DOMAIN = None # For dev | Stage 1 | None by default / for local testing | Change accordingly ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
+SESSION_COOKIE_PATH = '/'
 SESSION_COOKIE_SECURE = False # For dev | Stage 1 | True for HTTPS only
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # For dev | Stage 1 | Stores session data in the database
 SESSION_COOKIE_HTTPONLY = False  # JavaScript should not access the session cookie, but if we need session cookies to check leave False
@@ -107,8 +108,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False # Set to True if you want browser-length sessions
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 
-CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None' if your frontend is on a different domain
-SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None' if your frontend is on a different domain
+
+CSRF_COOKIE_SAMESITE = None  # or 'None' if your frontend is on a different domain
+SESSION_COOKIE_SAMESITE = None  # or 'None' if your frontend is on a different domain
 #SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax' # or Strict | Stage 2
 #CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax' # or Strict | Stage 2
 CSRF_COOKIE_HTTPONLY = False

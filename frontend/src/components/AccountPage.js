@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext'; // Ensure this is the correct import path
 
 const AccountPage = () => {
   const [userData, setUserData] = useState({
@@ -15,86 +16,50 @@ const AccountPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
+  const authContext = useAuth(); // Using the whole context for consistency
 
-
-  function getCsrfToken() {
-    let csrfToken = null;
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.startsWith('csrftoken=')) {
-        csrfToken = cookie.substring('csrftoken='.length);
-        break;
-      }
-    }
-    return csrfToken;
-  }
-  
-  // Then use this function when making fetch calls
-  const csrfToken = getCsrfToken();
-
-  
-  // A utility function to get a cookie by name.
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-
-  // Extract CSRF token value correctly
-const getCSRFToken = () => {
-  return document.cookie
-    .split('; ')
-    .find(row => row.startsWith('csrftoken'))
-    .split('=')[1];
-};
+  // Log the entire authContext for debugging purposes
+  console.log('AuthContext:', authContext);
 
   useEffect(() => {
-    fetch('http://localhost:8000/get_user_details/', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCookie('csrftoken'),  // Use getCookie to retrieve the CSRF token
-      },
-      credentials: 'include',
-    })
-    .then(response => {
-      if (response.status === 401 || response.status === 403) {
-        setError('Session expired or unauthorized access. Redirecting to login.');
-        navigate('/login');  // Redirect to login page
-      //   return null;  -  Prevent further processing in the promise chain | Stage 2 Do not forget to check again if works
-      } else if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.statusText}`);
-      }
-      return response.json();
-    })
-    
-    .then(data => {
-      if (data) {  // Check if data is not null
-        setUserData(prevState => ({
-          ...prevState,
-          email: data.email,
-          name: data.name,
-          surname: data.surname,
-          dob: data.dob,
-        }));
-        setSuccess('Account details loaded successfully.');
-      }
-    })
-    .catch(error => {
-      console.error('Failed to load account details:', error);
-      setError(`Failed to load account details: ${error.message}`);
-    });
-  }, [navigate]);
+    // Redirect if not authenticated, using the whole context for checking
+    if (!authContext.isAuthenticated) {
+      navigate('/login');
+    }
+  }, [authContext, navigate]);
+
+  useEffect(() => {
+    if (authContext.isAuthenticated) {
+      const fetchData = async () => {
+        const response = await fetch('http://localhost:8000/get_user_details/', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          setError('Session expired or unauthorized access. Redirecting to login.');
+          setTimeout(() => navigate('/login'), 3000);
+        } else if (response.ok) {
+          const data = await response.json();
+          setUserData(prevState => ({
+            ...prevState,
+            email: data.email,
+            name: data.name,
+            surname: data.surname,
+            dob: data.dob,
+          }));
+          setSuccess('Account details loaded successfully.');
+        } else {
+          throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+      };
+
+      fetchData().catch(error => {
+        console.error('Failed to load account details:', error);
+        setError(`Failed to load account details: ${error.message}`);
+      });
+    }
+  }, [authContext.isAuthenticated, navigate]);
 
   const handleChange = (event) => {
     setUserData({ ...userData, [event.target.name]: event.target.value });
@@ -109,11 +74,15 @@ const getCSRFToken = () => {
       return;
     }
 
+    const csrfToken = document.cookie.split('; ')
+      .find(row => row.startsWith('csrftoken'))
+      ?.split('=')[1];
+
     fetch('http://localhost:8000/set_user_details/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': getCSRFToken(),
+        'X-CSRFToken': csrfToken,
       },
       credentials: 'include',
       body: JSON.stringify({
@@ -142,7 +111,7 @@ const getCSRFToken = () => {
     });
   };
 
-  return (
+  return authContext.isAuthenticated ? (
     <div>
       <h2>My Account</h2>
       <p>Email: {userData.email}</p>
@@ -165,7 +134,7 @@ const getCSRFToken = () => {
         </form>
       )}
     </div>
-  );
+  ) : null; // Only render if authenticated, similar to ProgressPage
 };
 
 export default AccountPage;
