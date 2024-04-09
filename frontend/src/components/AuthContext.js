@@ -18,8 +18,10 @@ function getCsrfToken() {
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sessionKey, setSessionKey] = useState(localStorage.getItem('sessionKey') || null);
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
 
-  // Login function that updates isAuthenticated state based on response
+  // Login function that updates isAuthenticated state and stores session key
   const login = async (userCredentials) => {
     const csrfToken = getCsrfToken();
     try {
@@ -29,11 +31,16 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
           'X-CSRFToken': csrfToken,
         },
-        credentials: 'include', // Important for sending cookies over fetch
+        credentials: 'include',
         body: JSON.stringify(userCredentials),
       });
 
       if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('sessionKey', data.sessionKey); // Store session key in local storage
+        localStorage.setItem('userEmail', data.email);
+        setSessionKey(data.sessionKey);
+        setUserEmail(data.email);  // Update userEmail state
         setIsAuthenticated(true);
       } else {
         console.error('Login failed');
@@ -45,51 +52,74 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function that updates isAuthenticated state
+  // Logout function that clears session key and updates isAuthenticated state
   const logout = async () => {
     const csrfToken = getCsrfToken();
     try {
-      await fetch('http://localhost:8000/logout/', { //logout_view maybe
+      await fetch('http://localhost:8000/logout/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRFToken': csrfToken,
         },
-        credentials: 'include', // Important for sending cookies over fetch
+        credentials: 'include',
       });
+      localStorage.removeItem('sessionKey');
+      localStorage.removeItem('userEmail');  // Clear user email from local storage
+      setSessionKey(null);
+      setUserEmail('');  // Reset userEmail state
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
+  
   useEffect(() => {
-    // Function to check the session's validity on initial load
     const checkSession = async () => {
+      const sessionKey = localStorage.getItem('sessionKey');
+      if (!sessionKey) {
+        setIsAuthenticated(false);
+        return;
+      }
+      
       try {
         const response = await fetch('http://localhost:8000/check_session/', {
-          credentials: 'include',  // Ensures cookies, like session IDs, are included with the request
+          credentials: 'include',
         });
-  
+
         if (response.ok) {
           const data = await response.json();
           setIsAuthenticated(data.isAuthenticated);
+          if (!data.isAuthenticated) {
+            localStorage.removeItem('sessionKey');
+            localStorage.removeItem('userEmail');
+            setSessionKey(null);
+            setUserEmail('');
+          }
         } else {
           console.error('Session check failed:', response.status);
           setIsAuthenticated(false);
+          localStorage.removeItem('sessionKey');
+          localStorage.removeItem('userEmail');
+          setSessionKey(null);
+          setUserEmail('');
         }
       } catch (error) {
         console.error('Error checking session:', error);
         setIsAuthenticated(false);
+        localStorage.removeItem('sessionKey');
+        localStorage.removeItem('userEmail');
+        setSessionKey(null);
+        setUserEmail('');
       }
     };
-  
+
     checkSession();
   }, []);
-  
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, sessionKey, userEmail, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

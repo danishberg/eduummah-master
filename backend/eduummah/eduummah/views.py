@@ -39,21 +39,26 @@ from django.http import HttpResponseRedirect
 
 #from django.contrib.auth import login strange import
 
+from django.middleware.csrf import get_token
+
 @api_view(['POST'])
 def register_api(request):
-
+    # Log session ID and CSRF token for debugging purposes
     logger.info(f"Session ID Register_API: {request.session.session_key}")
+    csrf_token = get_token(request)
+    logger.info(f"CSRF Token from request: {csrf_token}")
 
     form = CustomUserCreationForm(request.data)
     if form.is_valid():
         inactive_user = send_verification_email(request, form)
         print(inactive_user.email)  # Just for checking; remove or secure this in production.
-        print("Verification email sent. First stage complete")
+        logger.info(f"Verification email sent to {inactive_user.email}")  # Consider adjusting log level or content for production
         return Response({
             'status': 'User created successfully. Check your email to verify.'
         }, status=status.HTTP_201_CREATED)
     else:
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -201,28 +206,38 @@ def set_user_details(request):
 
 logger = logging.getLogger(__name__)
 
-@api_view(['GET'])
-def get_user_details(request):
-    # Log the session data
-    logger.info("Session data:")
-    for key, value in request.session.items():
-        logger.info(f"{key}: {value}")
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 
-    logger.info(f"Session ID get_user_details: {request.session.session_key if hasattr(request.session, 'session_key') else 'No Session Key'}")
+
+
+from django.contrib.auth.decorators import login_required
+
+#@login_required
+def retrieve_user_details(request):
+    logger.info(f"retrieve_user_details initiated")
     logger.info(f"User Authenticated: {request.user.is_authenticated}")
-    logger.info(f"User Active: {request.user.is_active}")
-    logger.info(f"Current User: {request.user.get_username()}")
+    if request.method == 'GET':
+#        logger.info(f"Session ID get_user_details: {request.session.session_key if hasattr(request.session, 'session_key') else 'No Session Key'}")
+#        logger.info(f"User Authenticated: {request.user.is_authenticated}")
+#        logger.info(f"User Active: {request.user.is_active}")
+#        logger.info(f"Current User: {request.user.get_username()}")        
+        user = request.user
+        if user.is_authenticated:
+            # Assuming the user model has 'name', 'surname', and 'dob' fields
+            user_details = {
+                'email': user.email,
+                'name': user.name,
+                'surname': user.surname,
+                'dob': user.date_of_birth.strftime("%Y-%m-%d") if user.date_of_birth else None
+            }
+            return JsonResponse(user_details)
+        else:
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
+    return JsonResponse({'error': 'Bad request'}, status=400)
 
-    if request.user.is_authenticated:
-        user_data = {
-            'email': request.user.email,
-            'name': request.user.first_name or '',
-            'surname': request.user.last_name or '',
-            'dob': str(request.user.profile.date_of_birth) if hasattr(request.user, 'profile') and request.user.profile.date_of_birth else '',
-        }
-        return JsonResponse(user_data)
-    else:
-        return JsonResponse({'error': 'User is not authenticated'}, status=401)
 
 
 @api_view(['GET'])
@@ -230,6 +245,35 @@ def check_session(request):
     """
     Endpoint to check if the user is authenticated.
     """
-    is_authenticated = request.user.is_authenticated
+#    is_authenticated = request.user.is_authenticated
     logger.info(f"Session ID check_session: {request.session.session_key}")
-    return JsonResponse({'isAuthenticated': is_authenticated})
+    logger.info(f"Session Key double check: {request.session.session_key}")
+    logger.info(f"User Authenticated after login: {request.user.is_authenticated}")
+    logger.info(f"Current User: {request.user.get_username()}")
+    return JsonResponse({'isAuthenticated': True})
+
+
+
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
+
+def csrf_token(request):
+    csrf_token = get_token(request)
+    return JsonResponse({'csrfToken': csrf_token})
+
+def check_auth_status(request):
+    logger.info("Periodic auth status check initialized.")
+
+    # Logging additional request details for clarity
+    logger.info(f"Request method: {request.method}")
+    
+    # Checking if the user is authenticated and logging accordingly
+    if request.user.is_authenticated:
+        logger.info(f"Authenticated user: {request.user.get_username()}")
+        response_data = {'isAuthenticated': True}
+    else:
+        logger.info("No authenticated user found.")
+        response_data = {'isAuthenticated': False}
+
+    # Returning the response data indicating authentication status
+    return JsonResponse(response_data)

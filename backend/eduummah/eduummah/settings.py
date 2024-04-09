@@ -30,13 +30,13 @@ INSTALLED_APPS = [
 #     
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'eduummah.urls'
@@ -96,8 +96,8 @@ STATICFILES_DIRS = [BASE_DIR.parent.parent / 'frontend' / 'build' / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_WHITELIST = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
-CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
+#CORS_ORIGIN_WHITELIST = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
+#CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 CSRF_COOKIE_SECURE = False # For production change to True | For dev change to False | Stage 1
 SESSION_COOKIE_DOMAIN = None # For dev | Stage 1 | None by default / for local testing | Change accordingly ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','http://127.0.0.1:8000']
 SESSION_COOKIE_PATH = '/'
@@ -107,6 +107,9 @@ SESSION_COOKIE_HTTPONLY = False  # JavaScript should not access the session cook
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False # Set to True if you want browser-length sessions
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+
+
+#CORS_URLS_REGEX = r"^/api/.*$"
 
 
 CSRF_COOKIE_SAMESITE = None  # or 'None' if your frontend is on a different domain
